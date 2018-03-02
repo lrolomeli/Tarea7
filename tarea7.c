@@ -46,6 +46,12 @@
 #include "semphr.h"
 
 /**************************************************
+ * GLOBAL VARIABLES
+ *************************************************/
+SemaphoreHandle_t binarySemaphore;
+SemaphoreHandle_t countingSemaphore;
+
+/**************************************************
  * PROTOTYPES
  *************************************************/
 void initialize_peripherals(void);
@@ -53,13 +59,13 @@ void initialize_peripherals(void);
 /**************************************************
  * INTERRUPTS
  *************************************************/
-void PORTA_IRQHandler( void * pvParameters )
+void PORTA_IRQHandler( void )
 {
 
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	BaseType_t xHigherPriorityTaskWoken = pdTRUE;
 	 /* The event has occurred, use the semaphore to unblock the task so the task
 	 can process the event. */
-	 xSemaphoreGiveFromISR(pvParameters, &xHigherPriorityTaskWoken );
+	 xSemaphoreGiveFromISR(binarySemaphore, &xHigherPriorityTaskWoken );
 	 /* Clear the interrupt here. */
 	 /* Now the task has been unblocked a context switch should be performed if
 	 xHigherPriorityTaskWoken is equal to pdTRUE. NOTE: The syntax required to perform
@@ -70,13 +76,13 @@ void PORTA_IRQHandler( void * pvParameters )
 
 }
 
-void PORTC_IRQHandler( void * pvParameters )
+void PORTC_IRQHandler( void )
 {
 
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	BaseType_t xHigherPriorityTaskWoken = pdTRUE;
 	 /* The event has occurred, use the semaphore to unblock the task so the task
 	 can process the event. */
-	 xSemaphoreGiveFromISR(pvParameters, &xHigherPriorityTaskWoken );
+	 xSemaphoreGiveFromISR(countingSemaphore, &xHigherPriorityTaskWoken );
 	 /* Clear the interrupt here. */
 	 /* Now the task has been unblocked a context switch should be performed if
 	 xHigherPriorityTaskWoken is equal to pdTRUE. NOTE: The syntax required to perform
@@ -93,7 +99,6 @@ void PORTC_IRQHandler( void * pvParameters )
 void sw2_dealing_task(void * pvParameters)
 {
 	TickType_t xLastWakeTime;
-	SemaphoreHandle_t binarySemaphore;
 
 	const TickType_t xPeriod = pdMS_TO_TICKS( 10 );
 	binarySemaphore = xSemaphoreCreateBinary();
@@ -122,10 +127,9 @@ void sw2_dealing_task(void * pvParameters)
 void sw3_dealing_task(void * pvParameters)
 {
 	TickType_t xLastWakeTime;
-	SemaphoreHandle_t countingSemaphore;
 
 	uint8_t index;
-	const TickType_t xPeriod = pdMS_TO_TICKS( 10 );
+	const TickType_t xPeriod = pdMS_TO_TICKS( 1000 );
 	countingSemaphore = xSemaphoreCreateCounting(10, 0);
 
 	if ( NULL != countingSemaphore )
