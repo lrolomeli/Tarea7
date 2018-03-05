@@ -117,21 +117,20 @@ void sw3_dealing_task(void * pvParameters)
 
 	static uint8_t index;
 
-	for(;;)
+	for (;;)
 	{
 
-		 if( 10 == uxSemaphoreGetCount(countingSemaphore) )
-		 {
-				GPIO_TogglePinsOutput(GPIOB, 1<<22);
-				//restart sem and start again
-				for(index = 0; index < 10; index++)
-				{
-					xSemaphoreTake( countingSemaphore, portMAX_DELAY );
-				}
-		 }
+		if (10 == uxSemaphoreGetCount(countingSemaphore))
+		{
+			GPIO_TogglePinsOutput(GPIOB, 1 << 22);
+			//restart sem and start again
+			for (index = 0; index < 10; index++)
+			{
+				xSemaphoreTake(countingSemaphore, portMAX_DELAY);
+			}
+		}
 
 	}
-
 
 }
 
@@ -183,11 +182,10 @@ void initialize_peripherals(void)
 	PORT_SetPinInterruptConfig(PORTC, 6, kPORT_InterruptFallingEdge);
 
 	PORT_SetPinConfig(PORTB, 21, &config_led);
-    PORT_SetPinConfig(PORTB, 22, &config_led);
+	PORT_SetPinConfig(PORTB, 22, &config_led);
 
 	PORT_SetPinConfig(PORTA, 4, &config_switch);
-    PORT_SetPinConfig(PORTC, 6, &config_switch);
-
+	PORT_SetPinConfig(PORTC, 6, &config_switch);
 
 	gpio_pin_config_t led_config_gpio = { kGPIO_DigitalOutput, 1 };
 	gpio_pin_config_t switch_config_gpio = { kGPIO_DigitalInput, 1 };
@@ -198,11 +196,12 @@ void initialize_peripherals(void)
 	GPIO_PinInit(GPIOA, 4, &switch_config_gpio);
 	GPIO_PinInit(GPIOC, 6, &switch_config_gpio);
 
-	GPIO_WritePinOutput(GPIOB,21,1);
-	GPIO_WritePinOutput(GPIOB,22,1);
+	GPIO_WritePinOutput(GPIOB, 21, 1);
+	GPIO_WritePinOutput(GPIOB, 22, 1);
 
 	NVIC_EnableIRQ(PORTA_IRQn);
 	NVIC_EnableIRQ(PORTC_IRQn);
-	NVIC_SetPriority(PORTA_IRQn,2);
-	NVIC_SetPriority(PORTC_IRQn,3);
+	NVIC_SetPriority(PORTA_IRQn, 2);
+	NVIC_SetPriority(PORTC_IRQn, 3);
+
 }
