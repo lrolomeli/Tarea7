@@ -61,8 +61,9 @@ void initialize_peripherals(void);
  *************************************************/
 void PORTA_IRQHandler( void )
 {
-
-	BaseType_t xHigherPriorityTaskWoken = pdTRUE;
+	BaseType_t xHigherPriorityTaskWoken;
+	PORT_ClearPinsInterruptFlags(PORTA, 1<<4);
+	xHigherPriorityTaskWoken = pdFALSE;
 	 /* The event has occurred, use the semaphore to unblock the task so the task
 	 can process the event. */
 	 xSemaphoreGiveFromISR(binarySemaphore, &xHigherPriorityTaskWoken );
@@ -79,7 +80,9 @@ void PORTA_IRQHandler( void )
 void PORTC_IRQHandler( void )
 {
 
-	BaseType_t xHigherPriorityTaskWoken = pdTRUE;
+	BaseType_t xHigherPriorityTaskWoken;
+	PORT_ClearPinsInterruptFlags(PORTC, 1<<6);
+	xHigherPriorityTaskWoken = pdFALSE;
 	 /* The event has occurred, use the semaphore to unblock the task so the task
 	 can process the event. */
 	 xSemaphoreGiveFromISR(countingSemaphore, &xHigherPriorityTaskWoken );
@@ -98,26 +101,11 @@ void PORTC_IRQHandler( void )
  *************************************************/
 void sw2_dealing_task(void * pvParameters)
 {
-	TickType_t xLastWakeTime;
-
-	const TickType_t xPeriod = pdMS_TO_TICKS( 10 );
-	binarySemaphore = xSemaphoreCreateBinary();
-
-	if (binarySemaphore != NULL)
-	{
-		/**semaphore was created*/
-	}
-
 	for(;;)
 	{
 
-		 if( xSemaphoreTake(binarySemaphore, portMAX_DELAY ) == pdTRUE )
-		 {
-				PORT_ClearPinsInterruptFlags(PORTA, 1<<4);
-
-				GPIO_TogglePinsOutput(GPIOB, 21);
-		 }
-		 vTaskDelayUntil( &xLastWakeTime, xPeriod );
+		xSemaphoreTake(binarySemaphore, portMAX_DELAY);
+		GPIO_TogglePinsOutput(GPIOB, 1<<21);
 
 	}
 
@@ -126,32 +114,21 @@ void sw2_dealing_task(void * pvParameters)
 
 void sw3_dealing_task(void * pvParameters)
 {
-	TickType_t xLastWakeTime;
 
-	uint8_t index;
-	const TickType_t xPeriod = pdMS_TO_TICKS( 1000 );
-	countingSemaphore = xSemaphoreCreateCounting(10, 0);
-
-	if ( NULL != countingSemaphore )
-	{
-		/**semaphore was created*/
-	}
+	static uint8_t index;
 
 	for(;;)
 	{
 
 		 if( 10 == uxSemaphoreGetCount(countingSemaphore) )
 		 {
-				PORT_ClearPinsInterruptFlags(PORTC, 1<<6);
-				GPIO_TogglePinsOutput(GPIOB, 22);
+				GPIO_TogglePinsOutput(GPIOB, 1<<22);
 				//restart sem and start again
 				for(index = 0; index < 10; index++)
 				{
 					xSemaphoreTake( countingSemaphore, portMAX_DELAY );
 				}
 		 }
-
-		 vTaskDelayUntil( &xLastWakeTime, xPeriod );
 
 	}
 
@@ -173,8 +150,11 @@ int main(void)
 
 	initialize_peripherals();
 
-	xTaskCreate(sw2_dealing_task, "sw2", 110, (void *) 0, configMAX_PRIORITIES, NULL);
-	xTaskCreate(sw3_dealing_task, "sw3", 110, (void *) 0, configMAX_PRIORITIES, NULL);
+	countingSemaphore = xSemaphoreCreateCounting(10, 0);
+	binarySemaphore = xSemaphoreCreateBinary();
+
+	xTaskCreate(sw2_dealing_task, "sw2", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-1, NULL);
+	xTaskCreate(sw3_dealing_task, "sw3", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES-2, NULL);
 
 	vTaskStartScheduler();
 
@@ -218,7 +198,11 @@ void initialize_peripherals(void)
 	GPIO_PinInit(GPIOA, 4, &switch_config_gpio);
 	GPIO_PinInit(GPIOC, 6, &switch_config_gpio);
 
+	GPIO_WritePinOutput(GPIOB,21,1);
+	GPIO_WritePinOutput(GPIOB,22,1);
 
 	NVIC_EnableIRQ(PORTA_IRQn);
 	NVIC_EnableIRQ(PORTC_IRQn);
+	NVIC_SetPriority(PORTA_IRQn,2);
+	NVIC_SetPriority(PORTC_IRQn,3);
 }
